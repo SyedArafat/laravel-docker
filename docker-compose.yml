@@ -1,0 +1,62 @@
+version: "3.7"
+services:
+  redis:
+    image: redis:5.0.0-alpine
+    restart: always
+    container_name: myapp-redis
+    ports:
+      - 6119:6379
+    networks:
+      myapp_net:
+
+  db:
+    image: mysql
+    restart: always
+    container_name: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: movie_journal
+    ports:
+      - "31227:3306"
+    volumes:
+      # For Mac and also give appropriate permission to /private/mysql folder
+#      - /private/mysql:/var/lib/mysql
+    # For ubuntu
+       - /data/mysql:/var/lib/mysql
+    networks:
+      myapp_net:
+
+  app:
+    build: .
+    restart: always
+    container_name: codes
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "11219:80"
+    volumes:
+      - .:/var/www/codes
+    networks:
+      myapp_net:
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    links:
+      - db
+    depends_on:
+      - db
+    ports:
+      - '8389:80'
+    networks:
+      myapp_net:
+
+volumes:
+  web-app:
+    driver: local
+networks:
+  myapp_net:
+    driver: bridge
+    ipam:
+      driver: default
